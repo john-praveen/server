@@ -1,25 +1,36 @@
 version: '3.8'
 
 services:
+  # --- THE GUARD (Public DMZ) ---
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"    # Open the HTTP window to the public
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - server
+
+  # --- THE APP (Private Zone) ---
   server:
     build: .
-    ports:
-      - "80:3000"
+    # DELETED: ports: - "80:3000"
+    # Now it is hidden. Only Nginx can talk to it via the internal network.
     depends_on:
       - mongo
     environment:
-      
       - MONGO_URI=mongodb://mongo:27017/schooldb
-      
       - TEST_MONGO_URI=mongodb://mongo:27017/school_test_db
+      - PORT=3000  # Ensure your app listens on 3000 inside
     volumes:
       - .:/app
       - /app/node_modules
 
+  # --- THE VAULT (Private Zone) ---
   mongo:
     image: mongo:latest
-    ports:
-      - "27017:27017"
+    # DELETED: ports: - "27017:27017"
+    # Now it is invisible to the outside world.
     volumes:
       - mongo-data:/data/db
 
